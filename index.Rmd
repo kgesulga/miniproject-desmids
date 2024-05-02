@@ -22,26 +22,174 @@ rm(list=ls())
 
 # Load libraries
 library(tidyverse) # lots of useful functions!
+library(calecopal) # pretty, California-inspired palettes 
+library(cowplot) # to arrange plots with labels
+library(gridGraphics) # to span title across multiple plots
 library(AICcmodavg) # to test AICc
 library(car) # for Levene's Test
+
+# Load functions
+source("functions/flowcam_plotfunctions.R")
 
 # Load data
 raw_dat <- read_csv("data/1b_Growth_community_KG_edit2_mumax.csv")
 glimpse(raw_dat)
+flowcam_dat <- read_csv("data/flowcam_dat.csv")
+glimpse(flowcam_dat)
 
 ```
-# ANOVA
-## Maximum growth rate
-Question 1a: Does temperature and/or nutrients have a significant effect on maximum growth rate (mumax)?<br>
-Question 1b: Do temperature and nutrients have an interactive effect?
 
-### Meso community
+# Community relative abundance
+*Question: How does relative abundance change over time? Under nutrient-limitation? In a warmer temperature?*
+
+<details>
+  <summary>Click for details on tidying data.</summary>
+```{r}
+dat4plots <- flowcam_dat %>% 
+  select(day, community, media, temp, species, sp_mean, total_desmids_mean, rel_abund) %>% 
+  mutate(day_txt = case_when(day == 0 ~ "Day 0",
+                             day == 27 ~ "Day 27")) %>% 
+  mutate(species_txt = case_when(species == "e_ansatum" ~ "Euastrum ansatum",
+                                 species == "s_teliferum" ~ "Staurastrum teliferum",
+                                 species == "n_digitus" ~ "Netrium digitus",
+                                 species == "s_gracile" ~ "Staurastrum gracile",
+                                 species == "e_elegans" ~ "Euastrum elegans",
+                                 species == "e_oblongum" ~ "Euastrum oblongum")) %>%   
+  mutate(media_txt = case_when(media == "WHM" ~ "WHM",
+                               media == "5N" ~ "WHM [5% N]",
+                               media == "5P" ~ "WHM [5% P]"))
+glimpse(dat4plots)
+
+```
+</details>
+
+## Meso community
+
+```{r}
+# rel abund
+pt0 <- plot_relabund(timestep_day = 0, comm = "meso", palette = "lake") #+
+  # theme(legend.position="left",
+  #       legend.text = element_text(size=6)) #c(.5,0)) 
+pt0
+
+pt27 <- plot_relabund(timestep_day = 27, comm = "meso", palette = "lake") #+
+  # theme(legend.position = "none")
+pt27
+
+```
+
+
+```{r}
+p1 <- dat4plots %>% 
+    group_by(day_txt, community, media, temp, species, rel_abund) %>% 
+    distinct(rel_abund, .keep_all = T) %>% 
+    ungroup() %>% 
+    filter(day == 27,
+           species == "e_elegans") %>% # add in later filter == community
+    # plot
+    ggplot(aes(fill=species_txt, y=rel_abund, x=as.factor(temp))) + 
+    geom_bar(colour="black", position="stack", stat="identity") +
+    facet_wrap(~media_txt) + #, nrow = 2, ncol = 3
+    scale_fill_manual(values = "#CECEB9") + #cal_palette("lake")
+    ylab("Relative abundance [%]") +
+    xlab("Temperature [°C]") +
+    labs(fill = "Species",
+         # change here the community with func argument
+         title = paste("Day", 27),
+         subtitle = "Euastrum elegans (meso)") + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_bw() +
+    # Customize facet labels
+    theme(strip.background = element_rect(fill="#E4DECE"),
+          strip.text.x = element_text(size = 10.5),
+          legend.position = "none")
+
+p2<- dat4plots %>% 
+    group_by(day_txt, community, media, temp, species, rel_abund) %>% 
+    distinct(rel_abund, .keep_all = T) %>% 
+    ungroup() %>% 
+    filter(day == 27,
+           species == "e_oblongum") %>% # add in later filter == community
+    # plot
+    ggplot(aes(fill=species_txt, y=rel_abund, x=as.factor(temp))) + 
+    geom_bar(colour="black", position="stack", stat="identity") +
+    facet_wrap(~media_txt) + #, nrow = 2, ncol = 3
+    scale_fill_manual(values = "#7AC9B7") + #cal_palette("lake")
+    ylab("Relative abundance [%]") +
+    xlab("Temperature [°C]") +
+    labs(fill = "Species",
+         # change here the community with func argument
+         title = paste("Day", 27),
+         subtitle = "Euastrum oblongum (meso)") + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_bw() +
+    # Customize facet labels
+    theme(strip.background = element_rect(fill="#E4DECE"),
+          strip.text.x = element_text(size = 10.5),
+          legend.position = "none")
+
+p3 <- dat4plots %>% 
+    group_by(day_txt, community, media, temp, species, rel_abund) %>% 
+    distinct(rel_abund, .keep_all = T) %>% 
+    ungroup() %>% 
+    filter(day == 27,
+           species == "s_gracile") %>% # add in later filter == community
+    # plot
+    ggplot(aes(fill=species_txt, y=rel_abund, x=as.factor(temp))) + 
+    geom_bar(colour="black", position="stack", stat="identity") +
+    facet_wrap(~media_txt) + #, nrow = 2, ncol = 3
+    scale_fill_manual(values = "#6CA184") + #cal_palette("lake")
+    ylab("Relative abundance [%]") +
+    xlab("Temperature [°C]") +
+    labs(fill = "Species",
+         # change here the community with func argument
+         title = paste("Day", 27),
+         subtitle = "Staurastrum gracile (meso)") + 
+    scale_y_continuous(expand = c(0,0)) +
+    theme_bw() +
+    # Customize facet labels
+    theme(strip.background = element_rect(fill="#E4DECE"),
+          strip.text.x = element_text(size = 10.5),
+          legend.position = "none")
+
+btmrow <- plot_grid(p1, p2, p3, labels = c('A', 'B', 'C'), label_size = 12, ncol = 2)
+
+# now add the title
+title <- ggdraw() +
+  draw_label(
+    "Relative abundance of individual species in mesotrophic community",
+    fontface = 'bold',
+    x = 0,
+    hjust = 0
+  ) +
+  theme(
+    # add margin on the left of the drawing canvas,
+    # so title is aligned with left edge of first plot
+    plot.margin = margin(0, 0, 0, 7)
+  )
+
+plot_grid(
+  title, btmrow,
+  ncol = 1,
+  # rel_heights values control vertical title margins
+  rel_heights = c(0.1, 1)
+)
+```
 
 <br>
 
-#### Tidy data
+## Meso-oligo community
+add plots tomorrow
+
+# ANOVA
+
+## Maximum growth rate
+*Question a: Does temperature and/or nutrients have a significant effect on maximum growth rate (mumax)?*<br>
+*Question b: Do temperature and nutrients have an interactive effect?*
+
+### Meso community
 <details>
-  <summary>Click for details</summary>
+  <summary>Click for details on tidying data.</summary>
 ```{r, message = FALSE}
 dat_meso <- raw_dat %>% 
   filter(community == "meso") %>% 
@@ -69,9 +217,10 @@ ggplot(dat_meso, aes(x = Nutrient, y = mumax, color = Temp)) +
 
 <br>
 
-#### Fit model
 <details>
-  <summary>Click for details</summary>
+  <summary>Click for details on model fitting, AICc test, and anova assumptions. </summary>
+<br>
+**Fit model**
 ```{r, message = FALSE}
 # Additive model
 meso_model_add <- lm(mumax ~ Temp + Nutrient, data = dat_meso)
@@ -82,12 +231,10 @@ meso_model_interx <- lm(mumax ~ Temp*Nutrient, data = dat_meso)
 meso_model_interx
 
 ```
-</details>
 
 <br>
 
-#### Test AICc
-
+**Test AICc**
 ```{r}
 models <- list(meso_model_add, meso_model_interx) 
 model.names <- c("meso_model_add", "meso_model_interx")
@@ -96,13 +243,11 @@ aictab(cand.set = models, modnames = model.names)
 
 ```
 
-
-Based on AICc test, the additive model is a better fit.
+*Based on AICc test, the additive model is a better fit.*
 
 <br>
 
-#### Check assumptions {.tabset}
-##### Interactive model
+**Check assumptions of interactive model**
 
 ```{r}
 # 1. Residuals-Fit plot check that variance is constant across groups
@@ -120,20 +265,11 @@ par(OP)
 leveneTest(mumax~Temp*Nutrient, data = dat_meso)
 ```
 
-Data meets assumptions for the most part.
+*Data meets assumptions for the most part.*
+</details>
 
 <br>
 
-##### Additive model
-```{r}
-# plot(meso_model_interx, 1)
-# plot(meso_model_interx, 2)
-OP <- par(mfrow=c(1,2))
-plot(meso_model_add, 1:2)
-par(OP)
-```
-
-<br>
 
 #### Run ANOVA {.tabset}
 ##### Interactive ANOVA
@@ -150,6 +286,8 @@ There is no significant effect of temp and nutrients on mumax or interactive eff
 
 </div>
 
+<br><br><br>
+
 ##### Additive ANOVA
 ```{r}
 anova(meso_model_add)
@@ -164,17 +302,11 @@ There is no significant effect of temp and nutrients on mumax.
 
 </div>
 
-
-<br>
+<br><br><br>
 
 ### Meso-oligo community
-
-<br>
-
-#### Tidy data
-
 <details>
-  <summary>Click for details</summary>
+  <summary>Click for details on tidying data.</summary>
 ```{r}
 dat_mo <- raw_dat %>% 
   filter(community == "meso-oligo") %>% 
@@ -202,9 +334,10 @@ ggplot(dat_mo, aes(x = Nutrient, y = mumax, color = Temp)) +
 
 <br>
 
-#### Fit model
 <details>
-  <summary>Click for details</summary>
+  <summary>Click for details on model fitting, AICc test, and anova assumptions. </summary>
+<br>
+**Fit model**
 ```{r}
 # Additive model
 mo_model_add <- lm(mumax ~ Temp + Nutrient, data = dat_mo)
@@ -215,12 +348,9 @@ mo_model_interx <- lm(mumax ~ Temp*Nutrient, data = dat_mo)
 mo_model_interx
 
 ```
-</details>
 
 <br>
-
-#### Test AICc
-
+**Test AICc**
 ```{r}
 models <- list(mo_model_add, mo_model_interx) 
 model.names <- c("mo_model_add", "mo_model_interx")
@@ -229,13 +359,11 @@ aictab(cand.set = models, modnames = model.names)
 
 ```
 
-Based on AICc test, the additive model is a better fit.
+*Based on AICc test, the additive model is a better fit.*
 
 <br>
 
-#### Check assumptions {.tabset}
-##### Interactive model
-
+**Check assumptions of interactive model**
 ```{r}
 # Normality
 OP <- par(mfrow=c(1,2))
@@ -246,17 +374,9 @@ par(OP)
 leveneTest(mumax~Temp*Nutrient, data = dat_mo)
 ```
 
-Data meets assumptions for the most part.
+*Data meets assumptions for the most part.*
 
-<br>
-
-##### Additive model
-
-```{r}
-OP <- par(mfrow=c(1,2))
-plot(mo_model_add, 1:2)
-par(OP)
-```
+</details>
 
 <br>
 
@@ -271,9 +391,11 @@ div.blue { background-color:#e6f0ff; border-radius: 2px; padding: 5px;}
 </style>
 <div class = "blue">
 
-Temp and nutrients do not have a significant effect on mumax; however, there is a significant interaction effect between them <br>(p < 0.1). 
+Temp and nutrients do not have a significant effect on mumax; however, there is a significant interaction effect between them (p < 0.1). 
 
 </div>
+
+
 ##### Additive ANOVA
 ```{r}
 anova(mo_model_add)
@@ -288,18 +410,18 @@ There is no significant effect of temp and nutrients on mumax.
 
 </div>
 
-<br>
 
 ## Average growth rate 
 in progress...
 
-***
 
 # Session Info
+
 <details>
   <summary>Click for details</summary>
 ```{r}
 sessionInfo()
 ```
-</summary>
+</details>
+<br><br><br>
 #endscript
