@@ -1,0 +1,255 @@
+---
+title: "Desmid Mini Project - ANOVA"
+author: "Kristine Gesulga"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, echo = FALSE, include = FALSE, warnings = FALSE}
+
+rm(list=ls())
+
+# Load libraries
+library(tidyverse) # lots of useful functions!
+library(AICcmodavg) # to test AIC
+library(car) # for Levene's Test
+
+# Load data
+setwd("C:/Users/User/Desktop/Desmids/4_analyses")
+raw_dat <- read_csv("1b_Growth_community_KG_edit2_mumax.csv")
+glimpse(raw_dat)
+
+```
+
+# Maximum growth rate
+Question 1a: Does temperature and/or nutrients have a significant effect on maximum growth rate (mumax)?<br>
+Question 1b: Do temperature and nutrients have an interactive effect?
+
+## Meso community
+### Tidy data
+
+<details>
+  <summary>Click for details</summary>
+```{r}
+dat_meso <- raw_dat %>% 
+  filter(community == "meso") %>% 
+  select(mumax, Temp, Nutrient)
+glimpse(dat_meso) # response variable = mumax; explanatory variable = temperature / nutrient
+
+#### Convert Temperature + Nutrient treatments to factors (ANOVA test likes it in this format)
+dat_meso$Temp <- as.factor(dat_meso$Temp)
+dat_meso$Nutrient <- as.factor(dat_meso$Nutrient)
+#### Sanity check
+table(dat_meso$Temp, dat_meso$Nutrient)
+```
+</details> 
+
+
+### Visualise the data
+
+```{r, echo = FALSE}
+#### Plot
+ggplot(dat_meso, aes(x = Nutrient, y = mumax, color = Temp)) +
+  geom_boxplot()+
+  labs(title = "meso community")
+```
+
+### Fit model
+
+```{r}
+# Additive model
+meso_model_add <- lm(mumax ~ Temp + Nutrient, data = dat_meso)
+meso_model_add
+
+# Interactive model
+meso_model_interx <- lm(mumax ~ Temp*Nutrient, data = dat_meso)
+meso_model_interx
+
+```
+
+### Test AICc
+
+```{r}
+models <- list(meso_model_add, meso_model_interx) 
+model.names <- c("meso_model_add", "meso_model_interx")
+
+aictab(cand.set = models, modnames = model.names)
+
+```
+
+> Based on AICc test, the additive model is a better fit.
+
+
+### Check assumptions {.tabset}
+#### Interactive model
+
+```{r, echo = FALSE}
+# 1. Residuals-Fit plot check that variance is constant across groups
+# --> Want: straight line; Avoid: funnel-like shape 
+# 2. QQ plot checks for normality in the residuals
+# --> Want: points fitting closely to the diagonal line
+# https://mgimond.github.io/Stats-in-R/ANOVA.html
+
+# Normality
+OP <- par(mfrow=c(1,2))
+plot(meso_model_interx, 1:2)
+par(OP)
+
+# Homogeneity of Variance
+leveneTest(mumax~Temp*Nutrient, data = dat_meso)
+```
+
+> Data meets assumptions for the most part.
+
+
+#### Additive model
+```{r, echo = FALSE}
+# plot(meso_model_interx, 1)
+# plot(meso_model_interx, 2)
+OP <- par(mfrow=c(1,2))
+plot(meso_model_add, 1:2)
+par(OP)
+```
+
+
+
+
+### Run ANOVA {.tabset}
+#### Interactive ANOVA
+```{r}
+anova(meso_model_interx)
+```
+> There is no significant effect of temp and nutrients on mumax or interactive effects.
+
+#### Additive ANOVA
+```{r}
+anova(meso_model_add)
+```
+
+> There is no significant effect of temp and nutrients on mumax.
+
+</details>
+
+
+## Meso-oligo community
+### Tidy data
+
+<details>
+  <summary>Click for details</summary>
+```{r}
+dat_mo <- raw_dat %>% 
+  filter(community == "meso-oligo") %>% 
+  select(mumax, Temp, Nutrient)
+glimpse(dat_mo) # response variable = mumax; explanatory variable = temperature / nutrient
+
+#### Convert Temperature + Nutrient treatments to factors (ANOVA test likes it in this format)
+dat_mo$Temp <- as.factor(dat_mo$Temp)
+dat_mo$Nutrient <- as.factor(dat_mo$Nutrient)
+#### Sanity check
+table(dat_mo$Temp, dat_mo$Nutrient)
+```
+</details> 
+
+
+### Visualise the data
+
+```{r, echo = FALSE}
+#### Plot
+ggplot(dat_mo, aes(x = Nutrient, y = mumax, color = Temp)) +
+  geom_boxplot()+
+  labs(title = "meso-oligo community")
+```
+
+### Fit model
+
+```{r}
+# Additive model
+mo_model_add <- lm(mumax ~ Temp + Nutrient, data = dat_mo)
+mo_model_add
+
+# Interactive model
+mo_model_interx <- lm(mumax ~ Temp*Nutrient, data = dat_mo)
+mo_model_interx
+
+```
+
+### Test AICc
+
+```{r}
+models <- list(mo_model_add, mo_model_interx) 
+model.names <- c("mo_model_add", "mo_model_interx")
+
+aictab(cand.set = models, modnames = model.names)
+
+```
+
+> Based on AICc test, the additive model is a better fit.
+
+
+### Check assumptions {.tabset}
+#### Interactive model
+
+```{r, echo = FALSE}
+# 1. Residuals-Fit plot check that variance is constant across groups
+# --> Want: straight line; Avoid: funnel-like shape 
+# 2. QQ plot checks for normality in the residuals
+# --> Want: points fitting closely to the diagonal line
+# https://mgimond.github.io/Stats-in-R/ANOVA.html
+
+# Normality
+OP <- par(mfrow=c(1,2))
+plot(mo_model_interx, 1:2)
+par(OP)
+
+# Homogeneity of Variance
+leveneTest(mumax~Temp*Nutrient, data = dat_mo)
+```
+
+> Data meets assumptions for the most part.
+
+
+#### Additive model
+
+```{r, echo = FALSE}
+# plot(mo_model_interx, 1)
+# plot(mo_model_interx, 2)
+OP <- par(mfrow=c(1,2))
+plot(mo_model_add, 1:2)
+par(OP)
+```
+
+
+
+
+### Run ANOVA {.tabset}
+#### Interactive ANOVA
+```{r}
+anova(mo_model_interx)
+```
+
+> Temp and nutrients do not have a significant effect on mumax; however, there is a significant interaction effect between them (p < 0.1). 
+
+
+#### Additive ANOVA
+```{r}
+anova(mo_model_add)
+```
+
+> There is no significant effect of temp and nutrients on mumax.
+
+
+# Average growth rate 
+in progress...
+
+
+#endscript
