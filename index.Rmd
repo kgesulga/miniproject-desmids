@@ -1,5 +1,5 @@
 ---
-title: "Desmid Mini Project - ANOVA"
+title: "Desmid Mini Project - Data Analysis"
 author: "Kristine Gesulga"
 date: "`r Sys.Date()`"
 output:
@@ -38,13 +38,15 @@ flowcam_dat <- read_csv("data/flowcam_dat.csv")
 glimpse(flowcam_dat)
 
 ```
-
-# Community relative abundance
+# 
+# Meso community
+## Community relative abundance
 *Question: How does relative abundance change over time? Under nutrient-limitation? In a warmer temperature?*
 
 <details>
   <summary>Click for details on tidying data.</summary>
 ```{r}
+# Data frame is for both meso and meso-oligo communities
 dat4plots <- flowcam_dat %>% 
   select(day, community, media, temp, species, sp_mean, total_desmids_mean, rel_abund) %>% 
   mutate(day_txt = case_when(day == 0 ~ "Day 0",
@@ -62,8 +64,6 @@ glimpse(dat4plots)
 
 ```
 </details>
-
-## Meso community
 
 ```{r}
 # rel abund
@@ -178,16 +178,11 @@ plot_grid(
 
 <br>
 
-## Meso-oligo community
-add plots tomorrow
-
-# ANOVA
-
-## Maximum growth rate
+## ANOVA
+### Maximum growth rate
 *Question a: Does temperature and/or nutrients have a significant effect on maximum growth rate (mumax)?*<br>
 *Question b: Do temperature and nutrients have an interactive effect?*
 
-### Meso community
 <details>
   <summary>Click for details on tidying data.</summary>
 ```{r, message = FALSE}
@@ -304,7 +299,28 @@ There is no significant effect of temp and nutrients on mumax.
 
 <br><br><br>
 
-### Meso-oligo community
+
+# Meso-oligo community
+## Community relative abundance
+*Question: How does relative abundance change over time? Under nutrient-limitation? In a warmer temperature?*
+
+```{r}
+# rel abund
+pt0 <- plot_relabund(timestep_day = 0, comm = "meso-oligo", palette = "sierra1") #+
+  # theme(legend.position="left",
+  #       legend.text = element_text(size=6)) #c(.5,0)) 
+pt0
+
+pt27 <- plot_relabund(timestep_day = 27, comm = "meso-oligo", palette = "sierra1") #+
+  # theme(legend.position = "none")
+pt27
+
+```
+
+<br>
+
+## ANOVA
+### Maximum growth rate
 <details>
   <summary>Click for details on tidying data.</summary>
 ```{r}
@@ -391,9 +407,11 @@ div.blue { background-color:#e6f0ff; border-radius: 2px; padding: 5px;}
 </style>
 <div class = "blue">
 
-Temp and nutrients do not have a significant effect on mumax; however, there is a significant interaction effect between them (p < 0.1). 
+Temp and nutrients do not have a significant effect on mumax; however, there is a significant interaction effect between them <br>(p < 0.1). 
 
 </div>
+
+<br><br><br>
 
 
 ##### Additive ANOVA
@@ -410,10 +428,7 @@ There is no significant effect of temp and nutrients on mumax.
 
 </div>
 
-
-## Average growth rate 
-in progress...
-
+<br><br><br>
 
 # Session Info
 
