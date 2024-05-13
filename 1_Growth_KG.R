@@ -154,12 +154,12 @@ qplot(as.numeric(Day), logcounts, data=tt, colour=Temp, alpha=BioRep)+
 
 
 #write your new data as a csv#
-write.csv(growth_params_lag,"Growth_community_KG_edit2_mumax.csv")
+save(growth_params_lag, file = "C:/Users/User/Desktop/Desmids/miniproject-desmids/data/Growth_community_KG_edit2_mumax.RData")
 
 ####Plot Growth rates
 head(growth_params_lag)
 
-p3 <- 
+# p_mumax <- 
   ggplot(growth_params_lag, aes(x = Temp ,y = mumax, color=Temp, shape=Nutrient)) +
   geom_point(size=2)+
   stat_summary(fun=mean,
@@ -182,7 +182,7 @@ p3 <-
 
 png("plots/0_mumax/0_final_edit2_mumax_i3.png", width = 10, height = 6, units = "in", res = 300)
 # Print the list of plots
-print(p3)
+print(p_mumax)
 # Close the PDF device
 dev.off()
 
